@@ -1,5 +1,6 @@
 package cs6240.twitterProject;
 
+
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -28,11 +29,47 @@ public class AppTest
         return new TestSuite( AppTest.class );
     }
 
-    /**
-     * Rigourous Test :-)
-     */
+
     public void testApp()
     {
-        assertTrue( true );
+    	String line1 = "Free passes to the Rangers tournament!";
+    	String line2 = "rangers ftw hahahahaaaaaaaaaaaaaa :)";
+    	double d = App.fuzzyDistance(line1, line2);
+    	System.out.println(d);
+        assertTrue(d < 30);
+        
+        
+    	line1 = "Free passes to the Rangers tournament!";
+    	line2 = "rangers ftw";
+    	d = App.fuzzyDistance(line1, line2);
+    	System.out.println(d);
+        assertTrue(d < 30);
+
+        
+    	line1 = "Free passes to the Rangers tournament!";
+    	line2 = "rangers";
+    	d = App.fuzzyDistance(line1, line2);
+    	System.out.println(d);
+        assertTrue(d < 30);
+        
+        
+    	line1 = "Free passes to the Rangers tournament!";
+    	line2 = "rangers passes";
+    	d = App.fuzzyDistance(line1, line2);
+    	System.out.println(d);
+        assertTrue(d < 30);
+        
+    	line1 = "Free passes to the Yankees tournament!";
+    	line2 = "rangers passes";
+    	d = App.fuzzyDistance(line1, line2);
+    	System.out.println(d);
+        assertTrue(d < 30);
+        
+       	line1 = "Free passes to the Yankees tournament!";
+    	line2 = "rangers eat pizza";
+    	d = App.fuzzyDistance(line1, line2);
+    	System.out.println(d);
+        assertTrue(d < 30);
+ 
     }
 }
