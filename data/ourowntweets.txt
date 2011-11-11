@@ -1,0 +1,11 @@
+22	14	Tue Mar 21 21:00:54 +0000 2006			web	false	false	San Francisco	just setting up my twttr
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	hey how's it going man?
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	i #love whats happening inthis city
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	here's to all the people of the #world
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	can we do this another time?
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	have you heard #mj's latest?
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	#mich #jacks0n is way better than #bonjovi 
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	isn't #micheal-jackson the best? 
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	i just #love listening to #mj's tunes
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	whats up?
+[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	partying tonight -- grooving to #mj's thriller!
