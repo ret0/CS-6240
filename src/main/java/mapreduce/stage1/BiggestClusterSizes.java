@@ -1,6 +1,5 @@
 package mapreduce.stage1;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -32,18 +31,21 @@ import org.apache.hadoop.util.ToolRunner;
 
 public class BiggestClusterSizes extends Configured implements Tool {
 
-
 	public static class MapClass extends MapReduceBase implements
 			Mapper<LongWritable, Text, Text, IntWritable> {
-		
-		public static IntWritable one = new IntWritable(1);
-		
+
+		private static final IntWritable one = new IntWritable(1);
+		private static final Pattern hashtagPattern = Pattern
+				.compile("\\B#\\w*[a-zA-Z]+\\w*");
+
+		// hashtags with hyphens?
+		// http://erictarn.com/post/1060722347/the-best-twitter-hashtag-regular-expression
+
 		public void map(LongWritable key, Text value,
-				OutputCollector<Text, IntWritable> output,
-				Reporter reporter) throws IOException {
-		
-			/* 
-			 * 0 [tweetid]
+				OutputCollector<Text, IntWritable> output, Reporter reporter)
+				throws IOException {
+			/*
+			 * 0 [tweetid] 
 			 * 1 [userid] 
 			 * 2 [timestamp] 
 			 * 3 [reply-tweetid] 
@@ -54,22 +56,15 @@ public class BiggestClusterSizes extends Configured implements Tool {
 			 * 8 [location] 
 			 * 9 [text]
 			 */
+
 			String line = value.toString().toLowerCase();
 			String[] words = line.split("\t");
 			TweetInfo tweet = new TweetInfo();
-			tweet.tweetContent = words[words.length-1];
-			
-			StringSet hashtags = new StringSet();
-			
-			Pattern hashtagPattern = Pattern.compile("\\B#\\w*[a-zA-Z]+\\w*"); // hashtags with hyphens?
-			// http://erictarn.com/post/1060722347/the-best-twitter-hashtag-regular-expression
+			tweet.tweetContent = words[words.length - 1];
+
 			Matcher m = hashtagPattern.matcher(tweet.tweetContent);
-			while (m.find()) {
-				String tag = m.group();
-				hashtags.set.add(tag);
-				
-				output.collect(new Text(tag), one);
-			}
+			while (m.find())
+				output.collect(new Text(m.group()), one);
 		}
 	}
 
@@ -78,23 +73,25 @@ public class BiggestClusterSizes extends Configured implements Tool {
 	 */
 	public static class Reduce extends MapReduceBase implements
 			Reducer<Text, IntWritable, IntWritable, Text> {
-		
+
+		private static final int MIN_TAG_OCCURANCES = 1000;
+
 		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<IntWritable, Text> output,
-				Reporter reporter) throws IOException {
+				OutputCollector<IntWritable, Text> output, Reporter reporter)
+				throws IOException {
 
 			int sum = 0;
-			while(values.hasNext()) {
+			while (values.hasNext()) {
 				sum += values.next().get();
 			}
-			if(sum > 1000)
+			if (sum > MIN_TAG_OCCURANCES)
 				output.collect(new IntWritable(sum), key);
-			
+
 		}
 	}
 
 	static int printUsage() {
-		System.out.println("tc [-m <maps>] [-r <reduces>] <input> <output>");
+		System.out.println("stage1 [-m <maps>] [-r <reduces>] <input> <output>");
 		ToolRunner.printGenericCommandUsage(System.out);
 		return -1;
 	}
@@ -108,14 +105,14 @@ public class BiggestClusterSizes extends Configured implements Tool {
 	 */
 	public int run(String[] args) throws Exception {
 		JobConf conf = new JobConf(getConf(), BiggestClusterSizes.class);
-		conf.setJobName("tc");
+		conf.setJobName("stage1");
 
 		conf.setOutputKeyClass(IntWritable.class);
 		conf.setOutputValueClass(Text.class);
 
 		conf.setMapOutputKeyClass(Text.class);
 		conf.setMapOutputValueClass(IntWritable.class);
-		
+
 		conf.setMapperClass(MapClass.class);
 		conf.setReducerClass(Reduce.class);
 
@@ -153,8 +150,8 @@ public class BiggestClusterSizes extends Configured implements Tool {
 	}
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new BiggestClusterSizes(),
-				args);
+		int res = ToolRunner.run(new Configuration(),
+				new BiggestClusterSizes(), args);
 		System.exit(res);
 	}
 }
