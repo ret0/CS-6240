@@ -1,36 +1,23 @@
 package mapreduce.stage2;
 
-import java.awt.datatransfer.StringSelection;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import mapreduce.customdatatypes.StringSet;
 import mapreduce.customdatatypes.TweetInfo;
-import mapreduce.customdatatypes.WordCountDescComparator;
-import mapreduce.customdatatypes.WordCountMap;
-import mapreduce.customdatatypes.WordCountStripeFactory;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapWritable;
@@ -48,10 +35,8 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.base.Strings;
-import com.google.common.collect.Collections2;
+import util.MapSorter;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -67,17 +52,11 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 	public static class MapClass extends MapReduceBase implements
 			Mapper<LongWritable, Text, Text, MapWritable> {
 
-		// constructed in each map task
+		// constructed in each map task 
 		private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
-		// private static final HashSet<String> stopwords = new
-		// HashSet<String>();
 
-		// constants across map tasks
-		private static final IntWritable one = new IntWritable(1);
+		private static final IntWritable ONE = new IntWritable(1);
 	
-		// hashtags with hyphens?
-		// http://erictarn.com/post/1060722347/the-best-twitter-hashtag-regular-expression
-
 		public void configure(JobConf conf) {
 			try {
 				String trendyHashtagsCacheName = new Path(
@@ -117,36 +96,22 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, MapWritable> output, Reporter reporter)
 				throws IOException {
-			/*
-			 * 0 [tweetid] 1 [userid] 2 [timestamp] 3 [reply-tweetid] 4
-			 * [reply-userid] 5 [source] 6 [truncated?] 7 [favorited?] 8
-			 * [location] 9 [text]
-			 */
+		    
+		    TweetInfo tweetInfo = new TweetInfo(value.toString());
+            MapWritable distinctWordsInATweet = new MapWritable();
 
-			String line = value.toString().toLowerCase();
-			String[] words = line.split("\t");
-			TweetInfo tweet = new TweetInfo();
-			tweet.tweetContent = words[words.length - 1];
-
-			String[] tweetWords = tweet.tweetContent.split(" "); // \b
-			MapWritable wordCounts = new MapWritable();
-			for (String tweetWord : tweetWords) {
-				wordCounts.put(new Text(tweetWord), one);
+			for (String tweetWord : tweetInfo.getAllWords()) {
+				distinctWordsInATweet.put(new Text(tweetWord), ONE);
+				// TODO how many times do we count a word?
 			}
 
-			///TODO: List<String> getWords(String);  contains instead of matches
-			
-			
-			for (Entry<String, Integer> e : trendyHashtags.entrySet()) {
-				String tag = e.getKey().substring(1);
-
-				if (Predicates.containsPattern("\\b" + tag + "\\b").apply(
-						tweet.tweetContent)) {
-					output.collect(new Text(tag), wordCounts);
-				}
-			}
+			for (Writable word : distinctWordsInATweet.keySet()) {
+                Text w = (Text) word;
+                if(w.toString().startsWith("#") && trendyHashtags.containsKey(w.toString())) {
+                    output.collect(w, distinctWordsInATweet);
+                }
+            }
 		}
-
 	}
 
 	/**
@@ -155,7 +120,7 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 	public static class Reduce extends MapReduceBase implements
 			Reducer<Text, MapWritable, Text, Text> {
 
-		private static final int TOP_N_WORDS_LIMIT = 10;
+		private static final int TOP_N_WORDS_LIMIT = 100;
 
 		public void reduce(Text key, Iterator<MapWritable> values,
 				OutputCollector<Text, Text> output, Reporter reporter)
@@ -179,19 +144,24 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 			}
 
 			// keep top N entries
-			List<String> topNEntries = Lists.newArrayList(wordCounts.keySet());
-			if (wordCounts.size() > TOP_N_WORDS_LIMIT)
-				topNEntries = topNEntries.subList(0, TOP_N_WORDS_LIMIT);
-
-			output.collect(key,
-					new Text(StringUtils.join(topNEntries, ",")));
+			MapSorter<String, Integer> ms = new MapSorter<String, Integer>();
+			Map<String, Integer> sortedWordCounts = ms.sortByValue(wordCounts);
+			List<String> topNEntries = Lists.newArrayList();
+			Iterator<String> it = sortedWordCounts.keySet().iterator();
+			int i = 0;
+			while(it.hasNext() && i<TOP_N_WORDS_LIMIT){
+			    topNEntries.add(it.next());
+			    i++;
+			}
+			
+			output.collect(key, new Text(StringUtils.join(topNEntries, ",")));
 		}
 
 	}
 
 	static int printUsage() {
 		System.out
-				.println("stage1 [-m <maps>] [-r <reduces>] <input> <output>");
+				.println("stage2 [-m <maps>] [-r <reduces>] <input> <output>");
 		ToolRunner.printGenericCommandUsage(System.out);
 		return -1;
 	}
@@ -206,7 +176,7 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 	public int run(String[] args) throws Exception {
 		JobConf conf = new JobConf(getConf(),
 				ExtractTopWordsInTrendyTweets.class);
-		conf.setJobName("stage1");
+		conf.setJobName("stage2");
 
 		conf.setOutputKeyClass(Text.class);
 		conf.setOutputValueClass(Text.class);

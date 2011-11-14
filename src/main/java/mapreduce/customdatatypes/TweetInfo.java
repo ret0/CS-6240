@@ -1,34 +1,36 @@
 package mapreduce.customdatatypes;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import java.util.List;
 
-import org.apache.hadoop.io.Writable;
+import util.StringTools;
 
 
-public class TweetInfo implements Writable {
 
-    public String tweetContent;
+public class TweetInfo {
 
-    public TweetInfo(String tweetContent) {
-        this.tweetContent = tweetContent;
+    private final String completeLineFromFile;
+    private final String tweetContent;
+
+    public TweetInfo(String completeLine) {
+        this.completeLineFromFile = completeLine;
+        this.tweetContent = readTweetContent();
+    }
+
+    private String readTweetContent() {
+        String[] words = this.completeLineFromFile.toString().split("\t");
+        return words[words.length - 1];
     }
     
-    public TweetInfo() {
-        this("");
+    public List<String> getAllWords() {
+        return StringTools.splitEverything(tweetContent);
     }
-
-    public void readFields(DataInput in) throws IOException {
-        tweetContent = in.readUTF();
-    }
-
-    public void write(DataOutput out) throws IOException {
-        out.writeUTF(tweetContent);
+    
+    public List<String> getAllHashtags() {
+        return StringTools.splitTagsOnly(tweetContent);
     }
 
     public String toString() {
-        return tweetContent;
+        return completeLineFromFile;
     }
     
 }

@@ -4,11 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import mapreduce.customdatatypes.StringSet;
 import mapreduce.customdatatypes.TweetInfo;
 
 import org.apache.hadoop.conf.Configuration;
@@ -34,18 +30,13 @@ public class BiggestClusterSizes extends Configured implements Tool {
 	public static class MapClass extends MapReduceBase implements
 			Mapper<LongWritable, Text, Text, IntWritable> {
 
-		private static final IntWritable one = new IntWritable(1);
-		private static final Pattern hashtagPattern = Pattern
-				.compile("\\b#\\w*[a-zA-Z]+\\w*\\b");
-
-		// hashtags with hyphens?
-		// http://erictarn.com/post/1060722347/the-best-twitter-hashtag-regular-expression
-
+		private static final IntWritable ONE = new IntWritable(1);
+		
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
 			/*
-			 * 0 [tweetid] 
+			 * 0 [tweetid]  
 			 * 1 [userid] 
 			 * 2 [timestamp] 
 			 * 3 [reply-tweetid] 
@@ -57,14 +48,11 @@ public class BiggestClusterSizes extends Configured implements Tool {
 			 * 9 [text]
 			 */
 
-			String line = value.toString().toLowerCase();
-			String[] words = line.split("\t");
-			TweetInfo tweet = new TweetInfo();
-			tweet.tweetContent = words[words.length - 1];
+		    TweetInfo tweetInfo = new TweetInfo(value.toString());
 
-			Matcher m = hashtagPattern.matcher(tweet.tweetContent);
-			while (m.find())
-				output.collect(new Text(m.group()), one);
+			for (String tag : tweetInfo.getAllHashtags()) {
+			    output.collect(new Text(tag), ONE);
+            }
 		}
 	}
 
