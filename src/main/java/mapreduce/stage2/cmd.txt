@@ -1,0 +1,5 @@
+ hadoop jar twitterProject-0.0.1-SNAPSHOT-job.jar mapreduce.stage2.ExtractTopWordsInTrendyTweets /shared/twitter/tweets/tweets.txt /user/venugopalan.s/stage1bOut/part-r-00000 /user/venugopalan.s/stage2Out -r 44
+ 
+ hadoop job -set-priority <jobID> NORMAL
+ hadoop job -kill <jobID>
+ 

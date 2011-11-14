@@ -1,0 +1,1 @@
+pig -f getTopOnes.pig -param  input=/user/venugopalan.s/stage1Out -param output=/user/venugopalan.s/stage1bOut -param lowerBound=10000 -P mypigconfig/pig.properties

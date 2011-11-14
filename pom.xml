@@ -67,9 +67,9 @@
 						<descriptor>src/main/assembly/hadoop-job.xml</descriptor>
 					</descriptors>
 					<archive>
-						<manifest>
+						<!-- <manifest>
 							<mainClass>mapreduce.KMeansNoIterations</mainClass>
-						</manifest>
+						</manifest> -->
 					</archive>
 				</configuration>
 				<executions>

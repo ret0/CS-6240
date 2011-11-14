@@ -36,7 +36,7 @@ public class BiggestClusterSizes extends Configured implements Tool {
 
 		private static final IntWritable one = new IntWritable(1);
 		private static final Pattern hashtagPattern = Pattern
-				.compile("\\B#\\w*[a-zA-Z]+\\w*");
+				.compile("\\b#\\w*[a-zA-Z]+\\w*\\b");
 
 		// hashtags with hyphens?
 		// http://erictarn.com/post/1060722347/the-best-twitter-hashtag-regular-expression
