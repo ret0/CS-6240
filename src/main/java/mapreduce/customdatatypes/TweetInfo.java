@@ -2,6 +2,8 @@ package mapreduce.customdatatypes;
 
 import java.util.List;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import util.StringTools;
 
 
@@ -18,7 +20,7 @@ public class TweetInfo {
 
     private String readTweetContent() {
         String[] words = this.completeLineFromFile.toString().split("\t");
-        return words[words.length - 1];
+        return StringEscapeUtils.unescapeHtml(words[words.length - 1]);
     }
     
     public List<String> getAllWords() {

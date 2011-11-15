@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import junit.framework.Assert;
+import mapreduce.customdatatypes.TweetInfo;
 
 import org.junit.Test;
 
@@ -65,16 +66,28 @@ public class AppTest {
         
         // # is considered a non word char, therefore it's a boundary
         // Tested using http://gskinner.com/RegExr/
-        Collection<String> actualWords = StringTools.splitEverything("i like #mj's\nsongs. more\tthan #janet      #jackson's! hash-tag #hash-tag -tag " +
+    	
+    	///TODO: differentiate the elements in a tweet: hashtags, users, URLs (bit.ly or others), email addresses, sitenames e.g. google.com, years, zipcodes , the most commonly used unicode charactes on twitter, smileys
+    	
+    	///PROBLEMS: html & utf8 encodings, large numbers with commas in betw, 
+    	
+        Collection<String> actualWords = StringTools.splitEverything("i like #mj's\nsongs. more\tthan #janet @sapna      #jackson's! hash-tag #hash-tag -tag " +
                 		"#-tag tag- #tag- #tag_as -aaa - aa# bb-  #123456 #1984");
-        Assert.assertEquals(Lists.newArrayList("like", "#mj", "songs", "more", "than", "#janet", "#jackson", 
+        Assert.assertEquals(Lists.newArrayList("like", "#mj", "songs", "more", "than", "#janet", "sapna", "#jackson", 
                                 "hash-tag", "#hash-tag", "tag", "#-tag", "tag", "#tag", "#tag_as", "aaa", "aa", "bb", "#123456", "#1984"), actualWords);
 
         Collection<String> actualWords2 = StringTools.splitTagsOnly("i like #mj's\nsongs. more\tthan #janet      #JacKsoN's! hash-tag #Hash-tag -tag " +
                         "#-tag tag- #tag- #tag_as -aaa - aa# bb-  #123456 #1984");
         Assert.assertEquals(Lists.newArrayList("#mj", "#janet", "#jackson", 
                                 "#hash-tag", "#-tag", "#tag", "#tag_as", "#123456", "#1984"), actualWords2);
+        
+        
+        Collection<String> actualWords3 = new TweetInfo("&lt;hi&quot; #&#193;-tag").getAllWords();
+        Assert.assertEquals(Lists.newArrayList("hi", "tag"), actualWords3);
 
+        
+        Collection<String> actualWords4 = new TweetInfo("DO YOU COPY&#193;&#194; people?").getAllWords();
+        Assert.assertEquals(Lists.newArrayList("do", "you", "copy", "people"), actualWords4); // "\u00C1", "\u00C2", 
     }
 
     private void testPatternMatch(String testTweet, String testTag) {
