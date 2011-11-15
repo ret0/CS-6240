@@ -1,17 +1,12 @@
 package mapreduce.stage2;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
-import mapreduce.customdatatypes.TweetInfo;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -19,7 +14,6 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
@@ -28,16 +22,12 @@ import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
-import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import util.MapSorter;
-
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
@@ -48,71 +38,6 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 
 	// TRENDY_HASHTAGS_LIST: "/user/venugopalan.s/stage1Out/trendyHashtags.txt"
 	// STOPWORDS_LIST: "/user/venugopalan.s/stopwords.txt"
-
-	public static class MapClass extends MapReduceBase implements
-			Mapper<LongWritable, Text, Text, MapWritable> {
-
-		// constructed in each map task 
-		private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
-
-		private static final IntWritable ONE = new IntWritable(1);
-	
-		public void configure(JobConf conf) {
-			try {
-				String trendyHashtagsCacheName = new Path(
-						conf.get(VARNAME_TRENDY_HASHTAGS_LIST)).getName();
-
-				Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
-				if (null != cacheFiles && cacheFiles.length > 0) {
-					for (Path cachePath : cacheFiles) {
-						if (cachePath.getName().equals(trendyHashtagsCacheName)) {
-							loadTrendyHashtags(cachePath);
-							break;
-						}
-					}
-				}
-			} catch (IOException ioe) {
-				System.err
-						.println("IOException reading from distributed cache");
-				System.err.println(ioe.toString());
-			}
-		}
-
-		private void loadTrendyHashtags(Path cachePath) throws IOException {
-			BufferedReader lineReader = new BufferedReader(new FileReader(
-					cachePath.toString()));
-			try {
-				String line;
-				while ((line = lineReader.readLine()) != null) {
-					String[] words = line.split("\t");
-					this.trendyHashtags.put(words[1],
-							Integer.parseInt(words[0]));
-				}
-			} finally {
-				lineReader.close();
-			}
-		}
-
-		public void map(LongWritable key, Text value,
-				OutputCollector<Text, MapWritable> output, Reporter reporter)
-				throws IOException {
-		    
-		    TweetInfo tweetInfo = new TweetInfo(value.toString());
-            MapWritable distinctWordsInATweet = new MapWritable();
-
-			for (String tweetWord : tweetInfo.getAllWords()) {
-				distinctWordsInATweet.put(new Text(tweetWord), ONE);
-				// TODO how many times do we count a word?
-			}
-
-			for (Writable word : distinctWordsInATweet.keySet()) {
-                Text w = (Text) word;
-                if(w.toString().startsWith("#") && trendyHashtags.containsKey(w.toString())) {
-                    output.collect(w, distinctWordsInATweet);
-                }
-            }
-		}
-	}
 
 	/**
 	 * REDUCER:
@@ -127,34 +52,39 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 				throws IOException {
 
 			// create result wordcount stripe
-			TreeMap<String, Integer> wordCounts = Maps.newTreeMap();
-
+			TreeMap<String, Integer> mergedWordCounts = Maps.newTreeMap();
 			// sum over partial wordcount stripes
 			MapWritable mw;
 			while (values.hasNext()) {
 				mw = values.next();
+
 				for (Entry<Writable, Writable> e : mw.entrySet()) {
 					String word = ((Text) e.getKey()).toString();
 					int count = ((IntWritable) e.getValue()).get();
-					if (wordCounts.containsKey(word))
-						wordCounts.put(word, count + 1);
+					if (mergedWordCounts.containsKey(word))
+						mergedWordCounts.put(word, count + 1);
 					else
-						wordCounts.put(word, count);
+						mergedWordCounts.put(word, count);
 				}
 			}
 
-			// keep top N entries
-			MapSorter<String, Integer> ms = new MapSorter<String, Integer>();
-			Map<String, Integer> sortedWordCounts = ms.sortByValue(wordCounts);
-			List<String> topNEntries = Lists.newArrayList();
-			Iterator<String> it = sortedWordCounts.keySet().iterator();
-			int i = 0;
-			while(it.hasNext() && i<TOP_N_WORDS_LIMIT){
-			    topNEntries.add(it.next());
-			    i++;
+			// get top N entries
+			Map<String, Integer> topNWordCounts = Maps.newHashMap();
+			for (int i = 0; i < TOP_N_WORDS_LIMIT; i++) {
+				int maxVal = -1;
+				String maxKey = "";
+				for (Entry<String, Integer> e : mergedWordCounts.entrySet()) {
+					if (e.getValue() > maxVal) {
+						maxVal = e.getValue();
+						maxKey = e.getKey();
+					}
+				}
+				mergedWordCounts.remove(maxKey);
+				topNWordCounts.put(maxKey, maxVal);
 			}
-			
-			output.collect(key, new Text(StringUtils.join(topNEntries, ",")));
+			mergedWordCounts = null;
+
+			output.collect(key, new Text(StringUtils.join(topNWordCounts.keySet(), ",")));
 		}
 
 	}
