@@ -5,6 +5,7 @@ import java.util.Collection;
 
 import junit.framework.Assert;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Test;
 
 import util.StringTools;
@@ -74,6 +75,14 @@ public class AppTest {
                         "#-tag tag- #tag- #tag_as -aaa - aa# bb-  #123456 #1984");
         Assert.assertEquals(Lists.newArrayList("#mj", "#janet", "#jackson", 
                                 "#hash-tag", "#-tag", "#tag", "#tag_as", "#123456", "#1984"), actualWords2);
+        
+        final byte[] string = "&#10025;".getBytes("UTF-8");
+        //URLDecoder.
+        String bla = StringEscapeUtils.unescapeHtml("A &#10025; Z");
+        System.out.println("\u00c1");
+//        System.out.println("\u10025");
+//        System.out.println("\u2729");
+        System.out.println(bla);
 
     }
 
