@@ -1,0 +1,6 @@
+pig -x local -f pairwiseOverlapSize.pig -param input=hashWords.txt -param output=pigout
+
+
+pig -f pairwiseOverlapSize.pig -param input=/user/venugopalan.s/stage2Out -param output=/user/venugopalan.s/stage3Out
+
+
