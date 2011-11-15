@@ -29,20 +29,21 @@ public class MapClass extends MapReduceBase implements
 	// constructed in each map task
 	private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
 	private OutputCollector<Text, MapWritable> out;
-	
-	private final Map<String, Map<String, Integer>> combinerMap = Maps.newHashMap();
+
+	private final Map<String, Map<String, Integer>> combinerMap = Maps
+			.newHashMap();
 
 	private static final IntWritable ONE = new IntWritable(1);
 
 	public void configure(JobConf conf) {
 		try {
-			
+
 			String trendyHashtagsCacheName = new Path(
 					conf.get(ExtractTopWordsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
 					.getName();
 
-			// FOR  LOCAL  DEBUG
-			//loadTrendyHashtags(new Path("data/clusters.txt")); 
+			// FOR LOCAL DEBUG
+			// loadTrendyHashtags(new Path("data/clusters.txt"));
 
 			Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
 			if (null != cacheFiles && cacheFiles.length > 0) {
@@ -62,13 +63,13 @@ public class MapClass extends MapReduceBase implements
 	@Override
 	public void close() throws IOException {
 		for (Entry<String, Map<String, Integer>> e1 : combinerMap.entrySet()) {
-			
-			MapWritable mw =  new MapWritable();
+
+			MapWritable mw = new MapWritable();
 			for (Entry<String, Integer> e2 : e1.getValue().entrySet()) {
 				mw.put(new Text(e2.getKey()), new IntWritable(e2.getValue()));
 			}
 			out.collect(new Text(e1.getKey()), mw);
-			
+
 		}
 	}
 
@@ -90,14 +91,14 @@ public class MapClass extends MapReduceBase implements
 			OutputCollector<Text, MapWritable> output, Reporter reporter)
 			throws IOException {
 
-		///FIXME
+		// /FIXME
 		out = output;
-		
+
 		TweetInfo tweetInfo = new TweetInfo(value.toString());
 		// MapWritable distinctWordsInATweet = new MapWritable();
 		Map<String, Integer> distinctWordsInATweet = Maps.newHashMap();
 
-		for (String tweetWord : tweetInfo.getAllWords()) {
+		for (String tweetWord : tweetInfo.getAllMeaningfulWords()) {
 			distinctWordsInATweet.put(tweetWord, 1);
 			// TODO how many times do we count a word?
 		}
@@ -108,27 +109,29 @@ public class MapClass extends MapReduceBase implements
 				if (!combinerMap.containsKey(word))
 					combinerMap.put(word, distinctWordsInATweet);
 				else
-					combinerMap.put(word, 
-							combineWordcountMaps(combinerMap.get(word), distinctWordsInATweet));
+					combinerMap.put(
+							word,
+							combineWordcountMaps(combinerMap.get(word),
+									distinctWordsInATweet));
 			}
 		}
 	}
 
 	private Map<String, Integer> combineWordcountMaps(
 			Map<String, Integer> map1, Map<String, Integer> map2) {
-			
+
 		Map<String, Integer> resultMap = Maps.newHashMap();
 		resultMap.putAll(map1);
-		
+
 		for (Entry<String, Integer> e : map2.entrySet()) {
 			String key = e.getKey();
 			Integer val = e.getValue();
-			if(resultMap.containsKey(key))
-				resultMap.put(key, resultMap.get(key) +  val);
+			if (resultMap.containsKey(key))
+				resultMap.put(key, resultMap.get(key) + val);
 			else
 				resultMap.put(key, val);
 		}
-		
+
 		return resultMap;
 	}
 }

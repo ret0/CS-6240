@@ -150,7 +150,13 @@ public class ExtractTopWordsInTrendyTweets extends Configured implements Tool {
 		conf.set(VARNAME_TRENDY_HASHTAGS_LIST, other_args.get(1));
 		DistributedCache
 				.addCacheFile(new Path(other_args.get(1)).toUri(), conf);
-
+		
+		/*
+		conf.set(VARNAME_STOPWORDS_LIST, other_args.get(2));
+		DistributedCache
+				.addCacheFile(new Path(other_args.get(2)).toUri(), conf);
+		*/
+		
 		JobClient.runJob(conf);
 		return 0;
 	}

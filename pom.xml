@@ -45,8 +45,13 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-core</artifactId>
 			<version>0.20.2</version>
-
 			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.pig</groupId>
+			<artifactId>pig</artifactId>
+			<version>0.9.1</version>
 		</dependency>
 
 		<dependency>
@@ -67,9 +72,8 @@
 						<descriptor>src/main/assembly/hadoop-job.xml</descriptor>
 					</descriptors>
 					<archive>
-						<!-- <manifest>
-							<mainClass>mapreduce.KMeansNoIterations</mainClass>
-						</manifest> -->
+						<!-- <manifest> <mainClass>mapreduce.KMeansNoIterations</mainClass> 
+							</manifest> -->
 					</archive>
 				</configuration>
 				<executions>
@@ -84,5 +88,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	<!--  http://blog.mafr.de/2010/07/24/maven-hadoop-job/ -->
+	<!-- http://blog.mafr.de/2010/07/24/maven-hadoop-job/ -->
 </project>
