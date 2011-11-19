@@ -1,0 +1,1 @@
+ hadoop jar twitterProject-0.0.1-SNAPSHOT-job.jar mapreduce.stage4.TrendyHashTagPermutations /shared/twitter/tweets/tweets.txt /user/venugopalan.s/stage1bOut/part-r-00000 /user/venugopalan.s/stage4Out -r 40

@@ -1,5 +1,5 @@
 package util;
-
+// source : http://code.google.com/p/guava-libraries/issues/detail?id=71
 
 import java.util.ArrayList;
 import java.util.List;

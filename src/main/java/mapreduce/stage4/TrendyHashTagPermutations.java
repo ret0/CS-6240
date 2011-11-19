@@ -1,7 +1,10 @@
 package mapreduce.stage4;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,23 +35,76 @@ public class TrendyHashTagPermutations extends Configured implements Tool {
 	// STOPWORDS_LIST: "/user/venugopalan.s/stopwords.txt"
 
 	public static class Reduce extends MapReduceBase implements
-			Reducer<TextWritable, IntWritable, Text, IntWritable> {
+			Reducer<Text, IntWritable, Text, IntWritable> {
 
-        public void reduce(TextWritable key, Iterator<IntWritable> values,
+		// constructed in each reduce task
+		private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
+
+		public void configure(JobConf conf) {
+			try {
+
+				String trendyHashtagsCacheName = new Path(
+						conf.get(TrendyHashTagPermutations.VARNAME_TRENDY_HASHTAGS_LIST))
+						.getName();
+
+				// FOR LOCAL DEBUG
+				// loadTrendyHashtags(new Path("data/clusters.txt"));
+
+				Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
+				if (null != cacheFiles && cacheFiles.length > 0) {
+					for (Path cachePath : cacheFiles) {
+						if (cachePath.getName().equals(trendyHashtagsCacheName)) {
+							loadTrendyHashtags(cachePath);
+							break;
+						}
+					}
+				}
+			} catch (IOException ioe) {
+				System.err
+						.println("IOException reading from distributed cache");
+				System.err.println(ioe.toString());
+			}
+		}
+
+		private void loadTrendyHashtags(Path cachePath) throws IOException {
+			BufferedReader lineReader = new BufferedReader(new FileReader(
+					cachePath.toString()));
+			try {
+				String line;
+				while ((line = lineReader.readLine()) != null) {
+					String[] words = line.split("\t");
+					this.trendyHashtags.put(words[1],
+							Integer.parseInt(words[0]));
+				}
+			} finally {
+				lineReader.close();
+			}
+		}
+
+		public void reduce(Text key, Iterator<IntWritable> values,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
 
-			int currentPermutationCount = 0;
+			int tagPairCount = 0;
 			while (values.hasNext()) {
-			    currentPermutationCount += values.next().get();
+				tagPairCount += values.next().get();
 			}
-			String hashA = ((Text) key.get()[0]).toString();
-			int hashACount = Integer.valueOf(((Text) key.get()[1]).toString());
-			String hashB = ((Text) key.get()[2]).toString();
-			int hashBCount = Integer.valueOf(((Text) key.get()[3]).toString());
-			double score = (currentPermutationCount / (hashACount + hashBCount)) * 100; //FIXME; 
-			final IntWritable tagPairScore = new IntWritable((int)score);
-            output.collect(new Text(hashA + "," + hashB), tagPairScore);
+
+			String[] hashtags = key.toString().split(",");
+			int forwardRelationStrength = (int) (((double) tagPairCount / trendyHashtags
+					.get(hashtags[0])) * 100);
+			int inverseRelationStrength = (int) (((double) tagPairCount / trendyHashtags
+					.get(hashtags[1])) * 100);
+
+			if (forwardRelationStrength > 0 || inverseRelationStrength > 0) {
+				final IntWritable tagPairScore = new IntWritable(
+						inverseRelationStrength);
+				output.collect(new Text(key.toString() + "\t" + tagPairCount
+						+ "\t" + trendyHashtags.get(hashtags[0]) + "\t"
+						+ trendyHashtags.get(hashtags[1]) + "\t"
+						+ forwardRelationStrength), tagPairScore);
+
+			}
 		}
 
 	}
@@ -67,14 +123,13 @@ public class TrendyHashTagPermutations extends Configured implements Tool {
 	 *             when there are communication problems with the job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(),
-				TrendyHashTagPermutations.class);
+		JobConf conf = new JobConf(getConf(), TrendyHashTagPermutations.class);
 		conf.setJobName("stage4");
 
 		conf.setOutputKeyClass(Text.class);
 		conf.setOutputValueClass(IntWritable.class);
 
-		conf.setMapOutputKeyClass(TextWritable.class);
+		conf.setMapOutputKeyClass(Text.class);
 		conf.setMapOutputValueClass(IntWritable.class);
 
 		conf.setMapperClass(MapClass.class);
@@ -111,7 +166,8 @@ public class TrendyHashTagPermutations extends Configured implements Tool {
 		FileOutputFormat.setOutputPath(conf, new Path(other_args.get(2)));
 
 		conf.set(VARNAME_TRENDY_HASHTAGS_LIST, other_args.get(1));
-		DistributedCache.addCacheFile(new Path(other_args.get(1)).toUri(), conf);
+		DistributedCache
+				.addCacheFile(new Path(other_args.get(1)).toUri(), conf);
 
 		JobClient.runJob(conf);
 		return 0;
