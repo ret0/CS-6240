@@ -1,11 +1,15 @@
 package cs6240.twitterProject;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 
 import junit.framework.Assert;
 import mapreduce.customdatatypes.TweetInfo;
 
+import org.joda.time.DateTime;
 import org.junit.Test;
 
 import util.StringTools;
@@ -94,6 +98,15 @@ public class AppTest {
         boolean matchResult = Predicates.containsPattern(
                 "\\b" + testTag + "\\b").apply(testTweet);
         Assert.assertTrue(matchResult);
+    }
+    
+    @Test
+    public void testDateParsing() throws ParseException {
+        Date date = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy").parse("Tue Mar 21 21:00:54 +0000 2006");
+        System.out.println(new DateTime(date));
+        //DateTimeFormatter forPattern = DateTimeFormat.forPattern(");
+        //DateTime dt = forPattern.parseDateTime();
+        //System.out.println(dt);
     }
 
     private void printResults(String line1, String line2) throws IOException {
