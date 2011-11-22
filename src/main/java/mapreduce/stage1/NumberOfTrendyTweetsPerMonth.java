@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
 
 import mapreduce.customdatatypes.TweetInfo;
 import mapreduce.stage2.ExtractTopWordsInTrendyTweets;
@@ -27,164 +28,198 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
+
+import com.google.common.collect.Maps;
 
 public class NumberOfTrendyTweetsPerMonth extends Configured implements Tool {
 
-	public static class MapClass extends MapReduceBase implements
-			Mapper<LongWritable, Text, Text, IntWritable> {
+    public static class MapClass extends MapReduceBase implements
+            Mapper<LongWritable, Text, Text, IntWritable> {
 
-		private static final IntWritable ONE = new IntWritable(1);
-		
-		private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
-		
-		public void map(LongWritable key, Text value,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
-		
-		    TweetInfo tweetInfo = new TweetInfo(value.toString());
-		    for (String hashTag : tweetInfo.getAllHashtags()) {
-                if(trendyHashtags.containsKey(hashTag)) {
-                    emitTweet(output, tweetInfo, hashTag);
-                    break;
+        private static final IntWritable ONE = new IntWritable(1);
+
+        private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
+        private final HashMap<String, Integer> combiner = Maps.newHashMap();
+        
+        private OutputCollector<Text, IntWritable> out;
+
+        public void map(LongWritable key,
+                        Text value,
+                        OutputCollector<Text, IntWritable> output,
+                        Reporter reporter) throws IOException {
+            
+            out = output;
+
+            TweetInfo tweetInfo = new TweetInfo(value.toString());
+            final DateTime tweetDateTime = tweetInfo.getTweetDateTime();
+
+            if (tweetDateTime.isAfter(new DateMidnight(2008, 10, 1))
+                    && tweetDateTime.isBefore(new DateMidnight(2009, 9, 1))) {
+
+                final String simpleDate = getSimpleDate(tweetDateTime);
+                final String dummyKey = "aaa;" + simpleDate;
+                increaseCombinerValue(dummyKey);
+
+                for (String hashTag : tweetInfo.getAllHashtags()) {
+                    if (trendyHashtags.containsKey(hashTag)) {
+                        final String emitKey = hashTag + ";" + simpleDate;
+                        increaseCombinerValue(emitKey);
+                        break;
+                    }
                 }
             }
-		    
-		}
-
-        private void emitTweet(OutputCollector<Text, IntWritable> output,
-                               TweetInfo tweetInfo,
-                               String hashTag) throws IOException {
-            final DateTime tweetDateTime = tweetInfo.getTweetDateTime();
-            final String yearMonth = tweetDateTime.getYear() + ";" + String.format("%02d", tweetDateTime.getMonthOfYear());
-            final Text emitKey = new Text(hashTag + ";" + yearMonth );
-            output.collect(emitKey, ONE);
         }
-		
-		public void configure(JobConf conf) {
-	        try {
 
-	            String trendyHashtagsCacheName = new Path(
-	                    conf.get(ExtractTopWordsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
-	                    .getName();
+        private void increaseCombinerValue(final String emitKey) {
+            if(combiner.containsKey(emitKey)) {
+                combiner.put(emitKey, combiner.get(emitKey) + 1);
+            } else {
+                combiner.put(emitKey, 1);
+            }
+        }
+        
+        public void close() throws IOException {
+            for (Entry<String, Integer> entry : combiner.entrySet()) {
+                out.collect(new Text(entry.getKey()), new IntWritable(entry.getValue()));
+            }
+        }
 
-	            // FOR LOCAL DEBUG
-	             //loadTrendyHashtags(new Path("data/clusters.txt"));
+        private String getSimpleDate(final DateTime tweetDateTime) {
+            return tweetDateTime.getYear() + "-"
+                    + String.format("%02d", tweetDateTime.getMonthOfYear())
+                    + "-"
+                    + String.format("%02d", tweetDateTime.getDayOfMonth());
+        }
 
-	            Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
-	            if (null != cacheFiles && cacheFiles.length > 0) {
-	                for (Path cachePath : cacheFiles) {
-	                    if (cachePath.getName().equals(trendyHashtagsCacheName)) {
-	                        loadTrendyHashtags(cachePath);
-	                        break;
-	                    }
-	                }
-	            }
-	        } catch (IOException ioe) {
-	            System.err.println("IOException reading from distributed cache");
-	            System.err.println(ioe.toString());
-	        }
-	    }
-		
-		  private void loadTrendyHashtags(Path cachePath) throws IOException {
-		        BufferedReader lineReader = new BufferedReader(new FileReader(
-		                cachePath.toString()));
-		        try {
-		            String line;
-		            while ((line = lineReader.readLine()) != null) {
-		                String[] words = line.split("\t");
-		                this.trendyHashtags.put(words[1], Integer.parseInt(words[0]));
-		            }
-		        } finally {
-		            lineReader.close();
-		        }
-		    }
-	}
+        public void configure(JobConf conf) {
+            try {
 
-	/**
-	 * REDUCER:
-	 */
-	public static class Reduce extends MapReduceBase implements
-			Reducer<Text, IntWritable, Text, IntWritable> {
+                String trendyHashtagsCacheName = new Path(
+                        conf.get(ExtractTopWordsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
+                        .getName();
 
+                // FOR LOCAL DEBUG
+                // loadTrendyHashtags(new Path("data/clusters.txt"));
 
-		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<Text, IntWritable> output, Reporter reporter)
-				throws IOException {
+                Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
+                if (null != cacheFiles && cacheFiles.length > 0) {
+                    for (Path cachePath : cacheFiles) {
+                        if (cachePath.getName().equals(trendyHashtagsCacheName)) {
+                            loadTrendyHashtags(cachePath);
+                            break;
+                        }
+                    }
+                }
+            } catch (IOException ioe) {
+                System.err
+                        .println("IOException reading from distributed cache");
+                System.err.println(ioe.toString());
+            }
+        }
 
-			int sum = 0;
-			while (values.hasNext()) {
-				sum += values.next().get();
-			}
-			output.collect(key, new IntWritable(sum));
-		}
-	}
+        private void loadTrendyHashtags(Path cachePath) throws IOException {
+            BufferedReader lineReader = new BufferedReader(new FileReader(
+                    cachePath.toString()));
+            try {
+                String line;
+                while ((line = lineReader.readLine()) != null) {
+                    String[] words = line.split("\t");
+                    this.trendyHashtags.put(words[1],
+                            Integer.parseInt(words[0]));
+                }
+            } finally {
+                lineReader.close();
+            }
+        }
+    }
 
-	static int printUsage() {
-		System.out.println("stage1 [-m <maps>] [-r <reduces>] <input> <output>");
-		ToolRunner.printGenericCommandUsage(System.out);
-		return -1;
-	}
+    /**
+     * REDUCER:
+     */
+    public static class Reduce extends MapReduceBase implements
+            Reducer<Text, IntWritable, Text, IntWritable> {
 
-	/**
-	 * The main driver for word count map/reduce program. Invoke this method to
-	 * submit the map/reduce job.
-	 */
-	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), NumberOfTrendyTweetsPerMonth.class);
-		conf.setJobName("Phase 2, stage1 - hashtag per Month");
+        public void reduce(Text key,
+                           Iterator<IntWritable> values,
+                           OutputCollector<Text, IntWritable> output,
+                           Reporter reporter) throws IOException {
 
-		conf.setOutputKeyClass(Text.class);
-		conf.setOutputValueClass(IntWritable.class);
+            int sum = 0;
+            while (values.hasNext()) {
+                sum += values.next().get();
+            }
+            output.collect(key, new IntWritable(sum));
+        }
+    }
 
-		conf.setMapOutputKeyClass(Text.class);
-		conf.setMapOutputValueClass(IntWritable.class);
+    static int printUsage() {
+        System.out
+                .println("stage1 [-m <maps>] [-r <reduces>] <input> <output>");
+        ToolRunner.printGenericCommandUsage(System.out);
+        return -1;
+    }
 
-		conf.setMapperClass(MapClass.class);
-		conf.setReducerClass(Reduce.class);
+    /**
+     * The main driver for word count map/reduce program. Invoke this method to
+     * submit the map/reduce job.
+     */
+    public int run(String[] args) throws Exception {
+        JobConf conf = new JobConf(getConf(),
+                NumberOfTrendyTweetsPerMonth.class);
+        conf.setJobName("Phase 2, stage1 - hashtag per Month");
 
-//		List<String> other_args = new ArrayList<String>();
-//		for (int i = 0; i < args.length; ++i) {
-//			try {
-//				if ("-m".equals(args[i])) {
-//					conf.setNumMapTasks(Integer.parseInt(args[++i]));
-//				} else if ("-r".equals(args[i])) {
-//					conf.setNumReduceTasks(Integer.parseInt(args[++i]));
-//				} else {
-//					other_args.add(args[i]);
-//				}
-//			} catch (NumberFormatException except) {
-//				System.out.println("ERROR: Integer expected instead of "
-//						+ args[i]);
-//				return printUsage();
-//			} catch (ArrayIndexOutOfBoundsException except) {
-//				System.out.println("ERROR: Required parameter missing from "
-//						+ args[i - 1]);
-//				return printUsage();
-//			}
-//		}
-		// Make sure there are exactly 2 parameters left.
-		if (args.length != 3) {
-			System.out.println("ERROR: Wrong number of parameters: "
-					+ args.length + " instead of 3.");
-			System.out.println("INPUT OUTPUT TRENDYHASHTAGS-PATH");
-			return printUsage();
-		}
+        conf.setOutputKeyClass(Text.class);
+        conf.setOutputValueClass(IntWritable.class);
+
+        conf.setMapOutputKeyClass(Text.class);
+        conf.setMapOutputValueClass(IntWritable.class);
+
+        conf.setMapperClass(MapClass.class);
+        conf.setReducerClass(Reduce.class);
+
+        // List<String> other_args = new ArrayList<String>();
+        // for (int i = 0; i < args.length; ++i) {
+        // try {
+        // if ("-m".equals(args[i])) {
+        // conf.setNumMapTasks(Integer.parseInt(args[++i]));
+        // } else if ("-r".equals(args[i])) {
+        // conf.setNumReduceTasks(Integer.parseInt(args[++i]));
+        // } else {
+        // other_args.add(args[i]);
+        // }
+        // } catch (NumberFormatException except) {
+        // System.out.println("ERROR: Integer expected instead of "
+        // + args[i]);
+        // return printUsage();
+        // } catch (ArrayIndexOutOfBoundsException except) {
+        // System.out.println("ERROR: Required parameter missing from "
+        // + args[i - 1]);
+        // return printUsage();
+        // }
+        // }
+        // Make sure there are exactly 2 parameters left.
+        if (args.length != 3) {
+            System.out.println("ERROR: Wrong number of parameters: "
+                    + args.length + " instead of 3.");
+            System.out.println("INPUT OUTPUT TRENDYHASHTAGS-PATH");
+            return printUsage();
+        }
         FileInputFormat.setInputPaths(conf, args[0]);
         FileOutputFormat.setOutputPath(conf, new Path(args[1]));
 
         conf.set(ExtractTopWordsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST,
                 args[2]);
-        DistributedCache
-                .addCacheFile(new Path(args[2]).toUri(), conf);
+        DistributedCache.addCacheFile(new Path(args[2]).toUri(), conf);
 
         JobClient.runJob(conf);
         return 0;
-	}
+    }
 
-	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(),
-				new NumberOfTrendyTweetsPerMonth(), args);
-		System.exit(res);
-	}
+    public static void main(String[] args) throws Exception {
+        int res = ToolRunner.run(new Configuration(),
+                new NumberOfTrendyTweetsPerMonth(), args);
+        System.exit(res);
+    }
 }
