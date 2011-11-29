@@ -1,4 +1,4 @@
-package mapreduce.stage2;
+package mapreduce.phase1.stage2;
 
 import java.io.IOException;
 import java.util.ArrayList;

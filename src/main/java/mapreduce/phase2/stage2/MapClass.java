@@ -1,4 +1,4 @@
-package mapreduce.stage2;
+package mapreduce.phase2.stage2;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import mapreduce.customdatatypes.TweetInfo;
 
@@ -30,6 +31,7 @@ public class MapClass extends MapReduceBase implements
 	private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
 	private OutputCollector<Text, MapWritable> out;
 
+	// (hashtag -> (user -> count))
 	private final Map<String, Map<String, Integer>> combinerMap = Maps
 			.newHashMap();
 
@@ -39,7 +41,7 @@ public class MapClass extends MapReduceBase implements
 		try {
 
 			String trendyHashtagsCacheName = new Path(
-					conf.get(ExtractTopWordsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
+					conf.get(ExtractTopUserMentionsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
 					.getName();
 
 			// FOR LOCAL DEBUG
@@ -96,24 +98,27 @@ public class MapClass extends MapReduceBase implements
 
 		TweetInfo tweetInfo = new TweetInfo(value.toString());
 		// MapWritable distinctWordsInATweet = new MapWritable();
-		Map<String, Integer> distinctWordsInATweet = Maps.newHashMap();
-
-		for (String tweetWord : tweetInfo.getAllMeaningfulWords()) {
-			distinctWordsInATweet.put(tweetWord, 1);
-			// TODO how many times do we count a word?
-		}
-
-		for (String word : distinctWordsInATweet.keySet()) {
-			if (word.startsWith("#") && trendyHashtags.containsKey(word)) {
-				// output.collect(w, distinctWordsInATweet);
-				if (!combinerMap.containsKey(word))
-					combinerMap.put(word, distinctWordsInATweet);
+		
+		
+		Set<String> trendsInThisTweet = tweetInfo.getTrends(trendyHashtags.keySet());
+		if(!trendsInThisTweet.isEmpty()){
+			
+			Map<String, Integer> distinctUserNamesInATweet = Maps.newHashMap();
+			for (String username : tweetInfo.getAllUsernames()) {
+				distinctUserNamesInATweet.put(username, 1);
+			}
+			
+			for (String trend : trendsInThisTweet) {
+				
+				if (!combinerMap.containsKey(trend))
+					combinerMap.put(trend, distinctUserNamesInATweet);
 				else
 					combinerMap.put(
-							word,
-							combineWordcountMaps(combinerMap.get(word),
-									distinctWordsInATweet));
+							trend,
+							combineWordcountMaps(combinerMap.get(trend),
+									distinctUserNamesInATweet));
 			}
+				
 		}
 	}
 

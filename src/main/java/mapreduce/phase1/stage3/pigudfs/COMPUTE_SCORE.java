@@ -1,4 +1,4 @@
-package mapreduce.stage3.pigudfs;
+package mapreduce.phase1.stage3.pigudfs;
 
 import java.io.IOException;
 import java.util.Set;

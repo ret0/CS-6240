@@ -1,10 +1,10 @@
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	hey how's it going man?
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	i #love whats #testa happening inthis #testc city
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	here's to all the people of the #world
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	can we do this another time?
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	have you heard #mj's testlatest?
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	#mich #jacks0n #testb #testc is way better than #bonjovi 
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	isn't #micheal-jackson the best? 
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	i just #love #testa #testb #testc listening to #mj's #testc tunes
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	whats up?
-[tweetid]	[userid]	[timestamp]	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	partying tonight -- grooving to #mj's #testc #testb thriller!
+24242	23243434	Fri Apr 14 04:48:47 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	hey how's it @sapna going man?
+24242	23243435	Fri Apr 14 05:04:55 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	i #love @sachin whats #testa happening inthis #testc city
+24242	23243435	Fri Apr 14 05:15:43 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	here's to all the @reto people of the #world
+24242	23243435	Fri Apr 14 05:46:14 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	can we do this another time?
+24242	23243435	Fri Apr 14 05:46:22 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	have you @sachin heard @reto #mj's testlatest?
+24242	23243436	Fri Apr 14 05:58:29 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	#mich #jacks0n @sapna #testb #testc is way better than #bonjovi 
+24242	23243436	Fri Apr 14 06:41:38 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	isn't #micheal-jackson @sapna the best? 
+24242	23243436	Fri Apr 14 06:42:02 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	i just #love #testa #testb #testc listening @reto to #mj's #testc tunes
+24242	23243434	Fri Apr 14 06:42:15 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	whats up?
+24242	23243434	Fri Apr 14 06:47:34 +0000 2006	[reply-tweetid]	[reply-userid]	[source]	[truncated?]	[favorited?]	[location]	partying @sachin tonight @sapna -- grooving @reto to #mj's #testc #testb thriller!

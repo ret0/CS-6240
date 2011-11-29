@@ -14,6 +14,9 @@ public class StringTools {
 	private static final String DEFAULT_TWITTER_TAGS_ONLY = "#(\\-|\\w)*\\w";
 	private static final Pattern PATTERN_TAGS_ONLY = Pattern.compile(DEFAULT_TWITTER_TAGS_ONLY);
 	
+	private static final String DEFAULT_USERNAMES_ONLY = "@(\\w)+(:?)";
+	private static final Pattern PATTERN_USERNAMES_ONLY = Pattern.compile(DEFAULT_USERNAMES_ONLY);
+	
 	// hashtags with hyphens?
     // http://erictarn.com/post/1060722347/the-best-twitter-hashtag-regular-expression
 
@@ -25,6 +28,10 @@ public class StringTools {
         return split(content, PATTERN_TAGS_ONLY);
     }
 
+    public static List<String> splitUsernamesOnly(String content) {
+        return split(content, PATTERN_USERNAMES_ONLY);
+    }
+    
 	private static List<String> split(String content, Pattern regex) {
 		List<String> words = Lists.newArrayList();
 		Matcher matcher = regex.matcher(content.toLowerCase());

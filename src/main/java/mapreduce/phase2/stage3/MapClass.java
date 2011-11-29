@@ -1,20 +1,21 @@
-package mapreduce.stage4;
+package mapreduce.phase2.stage3;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import mapreduce.customdatatypes.IntArrayWriteable;
 import mapreduce.customdatatypes.TweetInfo;
 
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
@@ -22,26 +23,25 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 
-import util.Permutations;
-
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class MapClass extends MapReduceBase implements
-		Mapper<LongWritable, Text, Text, IntWritable> {
+		Mapper<LongWritable, Text, Text, MapWritable> {
 
 	// constructed in each map task
 	private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
-	private OutputCollector<Text, IntWritable> out;
+	private OutputCollector<Text, MapWritable> out;
 
-	private final Map<Set<String>, Integer> combinerMap = Maps.newHashMap();
+	// (hashtag -> (user -> count))
+	private final Map<String, Map<Long, int[]>> combinerMap = Maps.newHashMap();
+
+	private static final IntWritable ONE = new IntWritable(1);
 
 	public void configure(JobConf conf) {
 		try {
 
 			String trendyHashtagsCacheName = new Path(
-					conf.get(TrendyHashTagPermutations.VARNAME_TRENDY_HASHTAGS_LIST))
+					conf.get(ExtractTopUserContributionsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
 					.getName();
 
 			// FOR LOCAL DEBUG
@@ -64,10 +64,20 @@ public class MapClass extends MapReduceBase implements
 
 	@Override
 	public void close() throws IOException {
-		for (Entry<Set<String>, Integer> e : combinerMap.entrySet()) {
-			List<String> tagPair = Lists.newArrayList(e.getKey());
-			final Text outKey = new Text(tagPair.get(0) + "," + tagPair.get(1));
-			out.collect(outKey, new IntWritable(e.getValue()));
+		for (Entry<String, Map<Long, int[]>> e1 : combinerMap.entrySet()) {
+
+			MapWritable mw = new MapWritable();
+			for (Entry<Long, int[]> e2 : e1.getValue().entrySet()) {
+				int[] counts = e2.getValue();
+
+				IntArrayWriteable iw = new IntArrayWriteable(
+						new IntWritable[] { new IntWritable(counts[0]),
+								new IntWritable(counts[1]) });
+
+				mw.put(new Text(e2.getKey().toString()), iw);
+			}
+			out.collect(new Text(e1.getKey()), mw);
+
 		}
 	}
 
@@ -86,34 +96,58 @@ public class MapClass extends MapReduceBase implements
 	}
 
 	public void map(LongWritable key, Text value,
-			OutputCollector<Text, IntWritable> output, Reporter reporter)
+			OutputCollector<Text, MapWritable> output, Reporter reporter)
 			throws IOException {
 
 		// /FIXME
 		out = output;
 
 		TweetInfo tweetInfo = new TweetInfo(value.toString());
+		// MapWritable distinctWordsInATweet = new MapWritable();
 
-		Set<String> distinctTagsInSingleTweet = Sets.newTreeSet(tweetInfo
-				.getAllHashtags());
+		Set<String> trendsInThisTweet = tweetInfo.getTrends(trendyHashtags
+				.keySet());
+		if (!trendsInThisTweet.isEmpty()) {
 
-		final Set<String> trendyTagsInASingleTweet = Sets.intersection(
-				trendyHashtags.keySet(), distinctTagsInSingleTweet);
+			long authorId = tweetInfo.getAuthorId();
 
-		if (trendyTagsInASingleTweet.size() > 1) {
-			Permutations<String> perm = new Permutations<String>(
-					Lists.newArrayList(trendyTagsInASingleTweet), 2);
-			
-			while (perm.hasNext()) {
-				Set<String> tagPair = Sets.newTreeSet(perm.next());
-				if (combinerMap.containsKey(tagPair)) {
-					combinerMap.put(tagPair, combinerMap.get(tagPair) + 1);
-				} else {
-					combinerMap.put(tagPair, 1);
-				}
+			HashMap<Long, int[]> authorCounts = Maps.newHashMap();
+			authorCounts.put(authorId, new int[] { 1,
+					tweetInfo.isRetweet() ? 0 : 1 });
+
+			for (String trend : trendsInThisTweet) {
+
+				if (combinerMap.containsKey(trend))
+					combinerMap.put(
+							trend,
+							combineWordcountMaps(combinerMap.get(trend),
+									authorCounts));
+				else
+					combinerMap.put(trend, authorCounts);
+
 			}
+
 		}
-		
 	}
 
+	private Map<Long, int[]> combineWordcountMaps(Map<Long, int[]> map1,
+			Map<Long, int[]> map2) {
+
+		Map<Long, int[]> resultMap = Maps.newHashMap();
+		resultMap.putAll(map1);
+
+		for (Entry<Long, int[]> e : map2.entrySet()) {
+			long key = e.getKey();
+			int[] val = e.getValue();
+			if (resultMap.containsKey(key)) {
+				int[] counts = resultMap.get(key);
+				counts[0] += val[0];
+				counts[1] += val[1];
+				resultMap.put(key, counts);
+			} else
+				resultMap.put(key, val);
+		}
+
+		return resultMap;
+	}
 }

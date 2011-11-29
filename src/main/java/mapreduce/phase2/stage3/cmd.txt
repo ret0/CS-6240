@@ -1,0 +1,1 @@
+hadoop jar twitterProject-0.0.1-SNAPSHOT-job.jar mapreduce.phase2.stage3.ExtractTopUserContributionsInTrendyTweets /shared/twitter/tweets/tweets.txt /user/venugopalan.s/stage1bOut/trendyTags.txt phase2Stage3Out -r 44

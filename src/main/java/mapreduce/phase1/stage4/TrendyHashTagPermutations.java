@@ -1,4 +1,4 @@
-package mapreduce.stage4;
+package mapreduce.phase1.stage4;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

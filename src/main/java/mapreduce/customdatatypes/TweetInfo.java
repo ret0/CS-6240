@@ -18,8 +18,22 @@ import com.google.common.collect.Sets;
 
 
 public class TweetInfo {
-    
+	
+	/*
+	 * 0 [tweetid]  
+	 * 1 [userid] 
+	 * 2 [timestamp] 
+	 * 3 [reply-tweetid] 
+	 * 4 [reply-userid] 
+	 * 5 [source] 
+	 * 6 [truncated?] 
+	 * 7 [favorited?] 
+	 * 8 [location] 
+	 * 9 [text]
+	 */
+	
     private static final String ELEMENT_SEPARATOR = "\t";
+	private static final int USERID_INDEX = 1;
     private static final int DATE_INDEX = 2;
 
     private final static SimpleDateFormat TWITTER_DATE_FORMAT = 
@@ -79,6 +93,19 @@ public class TweetInfo {
     public List<String> getAllHashtags() {
         return StringTools.splitTagsOnly(tweetContent);
     }
+
+    public List<String> getAllUsernames() {
+        return StringTools.splitUsernamesOnly(tweetContent);
+    }
+
+    public Set<String> getTrends(Set<String> trendyTags){
+    	Set<String> tags = Sets.newHashSet(this.getAllHashtags());
+    	return Sets.intersection(tags, trendyTags);
+    }
+    
+    public boolean isRetweet(){
+    	return this.tweetContent.trim().startsWith("RT @");
+    }
     
     public DateTime getTweetDateTime() {
         return tweetDateTime;
@@ -87,5 +114,10 @@ public class TweetInfo {
     public String toString() {
         return StringUtils.join(lineElements, " ");
     }
+
+	public long getAuthorId() {
+		return Long.valueOf(this.lineElements[USERID_INDEX]); 
+		
+	}
     
 }

@@ -1,4 +1,4 @@
-package mapreduce.stage1;
+package mapreduce.phase1.stage1;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,18 +35,7 @@ public class BiggestClusterSizes extends Configured implements Tool {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-			/*
-			 * 0 [tweetid]  
-			 * 1 [userid] 
-			 * 2 [timestamp] 
-			 * 3 [reply-tweetid] 
-			 * 4 [reply-userid] 
-			 * 5 [source] 
-			 * 6 [truncated?] 
-			 * 7 [favorited?] 
-			 * 8 [location] 
-			 * 9 [text]
-			 */
+		
 
 		    TweetInfo tweetInfo = new TweetInfo(value.toString());
 

@@ -1,4 +1,4 @@
-package mapreduce.stage1;
+package mapreduce.phase2.stage1;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import mapreduce.customdatatypes.TweetInfo;
-import mapreduce.stage2.ExtractTopWordsInTrendyTweets;
+import mapreduce.phase1.stage2.ExtractTopWordsInTrendyTweets;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
