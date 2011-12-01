@@ -129,6 +129,7 @@ public class ExtractTopUserContributionsInTrendyTweets extends Configured
 			Map<String, int[]> removedElements = Maps.newHashMap();
 
 			// get top N entries
+			//List<Entry<String, int[]>> topNUserCounts = new ArrayList<Entry<String, int[]>>();
 			Map<String, Integer> topNUserCounts = Maps.newHashMap();
 			for (int i = 0; i < TOP_N_USERS_LIMIT; i++) {
 
@@ -167,7 +168,7 @@ public class ExtractTopUserContributionsInTrendyTweets extends Configured
 				for (Entry<String, int[]> e : mergedUserCounts.entrySet()) {
 					int[] counts = e.getValue();
 					if (counts[ORIGINAL_CONTRIB_INDEX] > maxOriginalContribVal) {
-						maxOriginalContribVal = counts[TOTAL_CONTRIB_INDEX];
+						maxOriginalContribVal = counts[ORIGINAL_CONTRIB_INDEX];
 						maxOriginalContribKey = e.getKey();
 					}
 				}
@@ -177,7 +178,9 @@ public class ExtractTopUserContributionsInTrendyTweets extends Configured
 							maxOriginalContribVal);
 				}
 			}
-
+			topNUserCounts = new MapSorter<String, Integer>()
+					.sortByValue(topNUserCounts);
+			
 			mergedUserCounts = null;
 			output.collect(
 					key,
