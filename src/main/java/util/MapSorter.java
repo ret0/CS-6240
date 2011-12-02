@@ -19,18 +19,22 @@ public final class MapSorter<K, V extends Comparable<? super V>> {
      * Returns a new Map, sorted by value (large values first)
      */
     public Map<K, V> sortByValue(final Map<K, V> map) {
-       return sortByValue(map, false);
+       return sortByValue(map, new Comparator<Entry<K, V>>() {
+           @Override
+           public int compare(final Entry<K, V> arg0,
+                              final Entry<K, V> arg1) {
+               return arg1.getValue().compareTo(arg0.getValue());
+           }
+       }, false);
     }
 
-    public Map<K, V> sortByValue(final Map<K, V> map, final boolean reverse) {
+    public Map<K, V> sortByValue(final Map<K, V> map, Comparator<Entry<K, V>> comp) {
+    	return sortByValue(map, comp, false);
+    }
+    
+    public Map<K, V> sortByValue(final Map<K, V> map, Comparator<Entry<K, V>> comp, final boolean reverse) {
         List<Entry<K, V>> list = new LinkedList<Entry<K, V>>(map.entrySet());
-        Collections.sort(list, new Comparator<Entry<K, V>>() {
-            @Override
-            public int compare(final Entry<K, V> arg0,
-                               final Entry<K, V> arg1) {
-                return arg1.getValue().compareTo(arg0.getValue());
-            }
-        });
+        Collections.sort(list, comp);
 
         if (reverse) {
             Collections.reverse(list);

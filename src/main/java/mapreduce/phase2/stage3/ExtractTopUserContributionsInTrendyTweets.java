@@ -9,11 +9,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import mapreduce.customdatatypes.IntArrayWriteable;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.filecache.DistributedCache;
@@ -32,8 +30,6 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-
-import util.MapSorter;
 
 import com.google.common.collect.Maps;
 
@@ -102,7 +98,7 @@ public class ExtractTopUserContributionsInTrendyTweets extends Configured
 				throws IOException {
 
 			// create result usercount stripe
-			TreeMap<String, int[]> mergedUserCounts = Maps.newTreeMap();
+			Map<String, int[]> mergedUserCounts = Maps.newHashMap();
 			// sum over partial usercount stripes
 			MapWritable mw;
 			while (values.hasNext()) {
@@ -129,34 +125,40 @@ public class ExtractTopUserContributionsInTrendyTweets extends Configured
 			Map<String, int[]> removedElements = Maps.newHashMap();
 
 			// get top N entries
-			//List<Entry<String, int[]>> topNUserCounts = new ArrayList<Entry<String, int[]>>();
-			Map<String, Integer> topNUserCounts = Maps.newHashMap();
+			// List<String> topNUsers = Lists.newArrayList();
+			int[] counts;
 			for (int i = 0; i < TOP_N_USERS_LIMIT; i++) {
 
 				String maxTotalContribKey = "";
 				int maxTotalContribVal = -1;
 
 				for (Entry<String, int[]> e : mergedUserCounts.entrySet()) {
-					int[] counts = e.getValue();
+					counts = e.getValue();
 					if (counts[TOTAL_CONTRIB_INDEX] > maxTotalContribVal) {
 						maxTotalContribVal = counts[TOTAL_CONTRIB_INDEX];
 						maxTotalContribKey = e.getKey();
 					}
 				}
 				if (maxTotalContribVal > -1) {
-					removedElements.put(maxTotalContribKey,
-							mergedUserCounts.remove(maxTotalContribKey));
-					topNUserCounts.put(maxTotalContribKey, maxTotalContribVal);
+					counts = mergedUserCounts.remove(maxTotalContribKey);
+					removedElements.put(maxTotalContribKey, counts);
+					output.collect(
+							key,
+							new Text(
+									maxTotalContribKey
+											+ "\ttc\t"
+											+ counts[TOTAL_CONTRIB_INDEX]
+											+ "\t"
+											+ counts[ORIGINAL_CONTRIB_INDEX]
+											+ "\t"
+											+ ((double) counts[TOTAL_CONTRIB_INDEX] / (double) this.trendyHashtags
+													.get(key.toString()))
+											* 100.0
+											+ "\t"
+											+ ((double) counts[ORIGINAL_CONTRIB_INDEX] / (double) counts[TOTAL_CONTRIB_INDEX])
+											* 100.0));
 				}
 			}
-			topNUserCounts = new MapSorter<String, Integer>()
-					.sortByValue(topNUserCounts);
-			output.collect(
-					key,
-					new Text("tc: "
-							+ StringUtils.join(topNUserCounts.entrySet(), ",")));
-			topNUserCounts.clear();
-			
 
 			mergedUserCounts.putAll(removedElements);
 			removedElements = null;
@@ -166,33 +168,38 @@ public class ExtractTopUserContributionsInTrendyTweets extends Configured
 				int maxOriginalContribVal = -1;
 
 				for (Entry<String, int[]> e : mergedUserCounts.entrySet()) {
-					int[] counts = e.getValue();
+					counts = e.getValue();
 					if (counts[ORIGINAL_CONTRIB_INDEX] > maxOriginalContribVal) {
 						maxOriginalContribVal = counts[ORIGINAL_CONTRIB_INDEX];
 						maxOriginalContribKey = e.getKey();
 					}
 				}
 				if (maxOriginalContribVal > -1) {
-					mergedUserCounts.remove(maxOriginalContribKey);
-					topNUserCounts.put(maxOriginalContribKey,
-							maxOriginalContribVal);
+					counts = mergedUserCounts.remove(maxOriginalContribKey);
+					output.collect(
+							key,
+							new Text(
+									maxOriginalContribKey
+											+ "\toc\t"
+											+ counts[TOTAL_CONTRIB_INDEX]
+											+ "\t"
+											+ counts[ORIGINAL_CONTRIB_INDEX]
+											+ "\t"
+											+ ((double) counts[TOTAL_CONTRIB_INDEX] / (double) this.trendyHashtags
+													.get(key.toString()))
+											* 100.0
+											+ "\t"
+											+ ((double) counts[ORIGINAL_CONTRIB_INDEX] / (double) counts[TOTAL_CONTRIB_INDEX])
+											* 100.0));
 				}
 			}
-			topNUserCounts = new MapSorter<String, Integer>()
-					.sortByValue(topNUserCounts);
-			
 			mergedUserCounts = null;
-			output.collect(
-					key,
-					new Text("oc: "
-							+ StringUtils.join(topNUserCounts.entrySet(), ",")));
 		}
-
 	}
 
 	static int printUsage() {
 		System.out
-				.println("phase2-stage2 [-m <maps>] [-r <reduces>] <input> <output>");
+				.println("phase2-stage3 [-m <maps>] [-r <reduces>] <input> <output>");
 		ToolRunner.printGenericCommandUsage(System.out);
 		return -1;
 	}
