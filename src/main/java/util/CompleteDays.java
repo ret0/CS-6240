@@ -18,7 +18,7 @@ import com.google.common.collect.Maps;
 public class CompleteDays {
     
     private final static DateMidnight FIRST_DATE = new DateMidnight(2008, 10, 1);
-    private final static DateMidnight LAST_DATE =new DateMidnight(2009, 9, 1);
+    private final static DateMidnight LAST_DATE = new DateMidnight(2009, 9, 1);
     
     public Map<String, Integer> writeDateValueMap() {
         Map<String, Integer> m = Maps.newTreeMap();
@@ -45,7 +45,6 @@ public class CompleteDays {
                 return arg0.startsWith(hashtag);
             }
         });
-        
         
         CompleteDays cd = new CompleteDays();
         Map<String, Integer> writeDateValueMap = cd.writeDateValueMap();
