@@ -1,5 +1,8 @@
 package mapreduce.phase2.stage3;
 
+import static mapreduce.phase2.stage3.ExtractTopUserContributionsInTrendyTweets.ORIGINAL_CONTRIB_INDEX;
+import static mapreduce.phase2.stage3.ExtractTopUserContributionsInTrendyTweets.TOTAL_CONTRIB_INDEX;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -25,17 +28,22 @@ import org.apache.hadoop.mapred.Reporter;
 
 import com.google.common.collect.Maps;
 
+/**
+ * Phase 2, Stage 3: Determine the number of contributions a user was made within a topic cluster. 
+ * The contributions are divided into "original contributions" and Retweets
+ * 
+ * Code: Mapper
+ * 
+ */
 public class MapClass extends MapReduceBase implements
 		Mapper<LongWritable, Text, Text, MapWritable> {
 
-	// constructed in each map task
 	private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
 	private OutputCollector<Text, MapWritable> out;
 
-	// (hashtag -> (user -> count))
+	// (hashtag -> (user -> countArray))
+	// countArray has two elements: {TOTAL_CONTRIBUTIONS, ORIGINA_CONTRIBUTIONS}
 	private final Map<String, Map<Long, int[]>> combinerMap = Maps.newHashMap();
-
-	private static final IntWritable ONE = new IntWritable(1);
 
 	public void configure(JobConf conf) {
 		try {
@@ -44,9 +52,7 @@ public class MapClass extends MapReduceBase implements
 					conf.get(ExtractTopUserContributionsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
 					.getName();
 
-			// FOR LOCAL DEBUG
 			// loadTrendyHashtags(new Path("data/clusters.txt"));
-
 			Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
 			if (null != cacheFiles && cacheFiles.length > 0) {
 				for (Path cachePath : cacheFiles) {
@@ -63,6 +69,9 @@ public class MapClass extends MapReduceBase implements
 	}
 
 	@Override
+	/**
+	 * Emit inmapper combiner values
+	 */
 	public void close() throws IOException {
 		for (Entry<String, Map<Long, int[]>> e1 : combinerMap.entrySet()) {
 
@@ -71,13 +80,12 @@ public class MapClass extends MapReduceBase implements
 				int[] counts = e2.getValue();
 
 				IntArrayWriteable iw = new IntArrayWriteable(
-						new IntWritable[] { new IntWritable(counts[0]),
-								new IntWritable(counts[1]) });
+						new IntWritable[] { new IntWritable(counts[TOTAL_CONTRIB_INDEX]),
+								new IntWritable(counts[ORIGINAL_CONTRIB_INDEX]) });
 
 				mw.put(new Text(e2.getKey().toString()), iw);
 			}
 			out.collect(new Text(e1.getKey()), mw);
-
 		}
 	}
 
@@ -99,11 +107,9 @@ public class MapClass extends MapReduceBase implements
 			OutputCollector<Text, MapWritable> output, Reporter reporter)
 			throws IOException {
 
-		// /FIXME
 		out = output;
 
 		TweetInfo tweetInfo = new TweetInfo(value.toString());
-		// MapWritable distinctWordsInATweet = new MapWritable();
 
 		Set<String> trendsInThisTweet = tweetInfo.getTrends(trendyHashtags
 				.keySet());
@@ -112,11 +118,11 @@ public class MapClass extends MapReduceBase implements
 			long authorId = tweetInfo.getAuthorId();
 
 			HashMap<Long, int[]> authorCounts = Maps.newHashMap();
-			authorCounts.put(authorId, new int[] { 1,
-					tweetInfo.isRetweet() ? 0 : 1 });
+			final int[] tweetScore = new int[] { 1,
+					tweetInfo.isRetweet() ? 0 : 1 };
+            authorCounts.put(authorId, tweetScore);
 
 			for (String trend : trendsInThisTweet) {
-
 				if (combinerMap.containsKey(trend))
 					combinerMap.put(
 							trend,
@@ -124,9 +130,7 @@ public class MapClass extends MapReduceBase implements
 									authorCounts));
 				else
 					combinerMap.put(trend, authorCounts);
-
 			}
-
 		}
 	}
 
@@ -141,8 +145,8 @@ public class MapClass extends MapReduceBase implements
 			int[] val = e.getValue();
 			if (resultMap.containsKey(key)) {
 				int[] counts = resultMap.get(key);
-				counts[0] += val[0];
-				counts[1] += val[1];
+				counts[TOTAL_CONTRIB_INDEX] += val[TOTAL_CONTRIB_INDEX];
+				counts[ORIGINAL_CONTRIB_INDEX] += val[ORIGINAL_CONTRIB_INDEX];
 				resultMap.put(key, counts);
 			} else
 				resultMap.put(key, val);

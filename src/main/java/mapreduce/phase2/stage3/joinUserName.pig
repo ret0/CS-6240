@@ -1,4 +1,7 @@
-
+/**
+ * Phase 2, Stage 3: Helper to Join Twitter UserIds with the usernames in users.txt
+ * 
+ */
 P2S3Out  = LOAD '$input1' AS (hashTag:chararray, uid:int, category:chararray, tc:int, oc:int, relTc:int, relOc:int);
 User  = LOAD '$input2' AS (uid:int, uname:chararray);
 

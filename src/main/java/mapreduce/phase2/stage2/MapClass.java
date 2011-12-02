@@ -24,18 +24,21 @@ import org.apache.hadoop.mapred.Reporter;
 
 import com.google.common.collect.Maps;
 
+/**
+ * Phase 2, Stage 2: Find the most often mentioned users within a certain topic cluster
+ * 
+ * Code: Mapper
+ * 
+ */
 public class MapClass extends MapReduceBase implements
 		Mapper<LongWritable, Text, Text, MapWritable> {
 
-	// constructed in each map task
 	private final HashMap<String, Integer> trendyHashtags = new HashMap<String, Integer>();
 	private OutputCollector<Text, MapWritable> out;
 
 	// (hashtag -> (user -> count))
 	private final Map<String, Map<String, Integer>> combinerMap = Maps
 			.newHashMap();
-
-	private static final IntWritable ONE = new IntWritable(1);
 
 	public void configure(JobConf conf) {
 		try {
@@ -44,7 +47,6 @@ public class MapClass extends MapReduceBase implements
 					conf.get(ExtractTopUserMentionsInTrendyTweets.VARNAME_TRENDY_HASHTAGS_LIST))
 					.getName();
 
-			// FOR LOCAL DEBUG
 			// loadTrendyHashtags(new Path("data/clusters.txt"));
 
 			Path[] cacheFiles = DistributedCache.getLocalCacheFiles(conf);
@@ -63,6 +65,9 @@ public class MapClass extends MapReduceBase implements
 	}
 
 	@Override
+	/**
+	 * Emit values from in-mapper combiner
+	 */
 	public void close() throws IOException {
 		for (Entry<String, Map<String, Integer>> e1 : combinerMap.entrySet()) {
 
@@ -71,7 +76,6 @@ public class MapClass extends MapReduceBase implements
 				mw.put(new Text(e2.getKey()), new IntWritable(e2.getValue()));
 			}
 			out.collect(new Text(e1.getKey()), mw);
-
 		}
 	}
 
@@ -93,12 +97,9 @@ public class MapClass extends MapReduceBase implements
 			OutputCollector<Text, MapWritable> output, Reporter reporter)
 			throws IOException {
 
-		// /FIXME
 		out = output;
 
 		TweetInfo tweetInfo = new TweetInfo(value.toString());
-		// MapWritable distinctWordsInATweet = new MapWritable();
-		
 		
 		Set<String> trendsInThisTweet = tweetInfo.getTrends(trendyHashtags.keySet());
 		if(!trendsInThisTweet.isEmpty()){
@@ -118,7 +119,6 @@ public class MapClass extends MapReduceBase implements
 							combineWordcountMaps(combinerMap.get(trend),
 									distinctUserNamesInATweet));
 			}
-				
 		}
 	}
 

@@ -1,3 +1,8 @@
+/**
+ * Phase 2, Stage 1: Find number of mentions of top hashtags per day in the "restricted" / interesting date range
+ * 
+ * Code: Pig script for counting number of tweets per month/day, functionality is now delivered by {@link NumberOfTrendyTweetsPerDay}
+ */
 
 
 REGISTER twitterProject-0.0.1-SNAPSHOT-job.jar;

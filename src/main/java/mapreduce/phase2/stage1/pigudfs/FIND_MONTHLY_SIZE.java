@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import mapreduce.phase2.stage1.NumberOfTrendyTweetsPerDay;
+
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.BagFactory;
 import org.apache.pig.data.DataBag;
@@ -13,7 +15,11 @@ import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.util.WrappedIOException;
 import org.joda.time.DateTime;
 
-
+/**
+ * Phase 2, Stage 1: Find number of mentions of top hashtags per day in the "restricted" / interesting date range
+ * 
+ * Code: UDF for counting number of tweets per month, functionality is now delivered by {@link NumberOfTrendyTweetsPerDay}
+ */
 public class FIND_MONTHLY_SIZE extends EvalFunc<DataBag> {
 	public DataBag exec(Tuple input) throws IOException {
 		/*
