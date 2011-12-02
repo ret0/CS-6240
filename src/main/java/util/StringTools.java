@@ -6,6 +6,9 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.Lists;
 
+/**
+ * Regular expressions to extract specific elements from tweets 
+ */
 public class StringTools {
 
 	private static final String DEFAULT_TWITTER_WORDS_AND_TAGS = "(#|\\w)(\\-|\\w)*\\w";

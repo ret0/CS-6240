@@ -15,6 +15,13 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 
+/**
+ * To make sure that we could render timelines properly we had fill in zero
+ * values on dates where a certain topic was not mentioned at all.
+ * 
+ *  This helper ensures that we have a complete list of dates for a given date-range and hashtag 
+ *
+ */
 public class CompleteDays {
     
     private final static DateMidnight FIRST_DATE = new DateMidnight(2008, 10, 1);

@@ -1,10 +1,13 @@
 package util;
-// source : http://code.google.com/p/guava-libraries/issues/detail?id=71
+
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * // source : http://code.google.com/p/guava-libraries/issues/detail?id=71
+ * 
+ * 
  * The Permutations class provides an iteration of all permutations of an list
  * of objects. Each permutation is simply an ordered list of the group.
  * <p>
