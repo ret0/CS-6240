@@ -11,6 +11,11 @@ import org.apache.pig.impl.util.WrappedIOException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+/**
+ * Phase 1, Stage 3: Count intersection size of the wordsets of the top words in two different hashtags 
+ * Code: Custom Function for PigLatin, see pairwiseOverlapSize.pig
+ */
+
 public class COMPUTE_SCORE extends EvalFunc<Tuple> {
 	public Tuple exec(Tuple input) throws IOException {
 		if (input == null || input.size() == 0)

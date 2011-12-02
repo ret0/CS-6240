@@ -16,7 +16,10 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 
-
+/**
+ * Info object that represents a single tweet based on
+ * a line in tweets.txt 
+ */
 public class TweetInfo {
 	
 	/*
@@ -65,7 +68,7 @@ public class TweetInfo {
         try {
             return new DateTime(TWITTER_DATE_FORMAT.parse(lineElements[DATE_INDEX]));
         } catch (ParseException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("READ INVALID DATE. Line was: " + toString() + "(" + e + ")");
         }
     }
 
@@ -75,7 +78,7 @@ public class TweetInfo {
     }
     
     /**
-     * @return all words (including hashtags)
+     * @return all words (including hashtags!)
      */
     public List<String> getAllWords() {
         return StringTools.splitEverything(tweetContent);
@@ -83,7 +86,6 @@ public class TweetInfo {
 
     public Collection<String> getAllMeaningfulWords() {
         return  Collections2.filter(getAllWords(), new Predicate<String>() {
-			@Override
 			public boolean apply(String arg0) {
 				return !STOP_WORDS.contains(arg0);
 			}
@@ -117,7 +119,6 @@ public class TweetInfo {
 
 	public long getAuthorId() {
 		return Long.valueOf(this.lineElements[USERID_INDEX]); 
-		
 	}
     
 }

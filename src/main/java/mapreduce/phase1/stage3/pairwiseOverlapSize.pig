@@ -1,4 +1,7 @@
-
+/**
+ * Phase 1, Stage 3: Count intersection size of the wordsets of the top words in two different hashtags 
+ * See COMPUTE_SCORE.java for code of UDF
+ */
 
 REGISTER twitterProject-0.0.1-SNAPSHOT-job.jar;
 

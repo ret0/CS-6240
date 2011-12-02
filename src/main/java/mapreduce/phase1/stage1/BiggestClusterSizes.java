@@ -25,6 +25,9 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+/**
+ * Phase 1, Stage 1: Count all Hashtag occurences
+ */
 public class BiggestClusterSizes extends Configured implements Tool {
 
 	public static class MapClass extends MapReduceBase implements
@@ -35,7 +38,6 @@ public class BiggestClusterSizes extends Configured implements Tool {
 		public void map(LongWritable key, Text value,
 				OutputCollector<Text, IntWritable> output, Reporter reporter)
 				throws IOException {
-		
 
 		    TweetInfo tweetInfo = new TweetInfo(value.toString());
 
@@ -45,13 +47,10 @@ public class BiggestClusterSizes extends Configured implements Tool {
 		}
 	}
 
-	/**
-	 * REDUCER:
-	 */
 	public static class Reduce extends MapReduceBase implements
 			Reducer<Text, IntWritable, IntWritable, Text> {
 
-		private static final int MIN_TAG_OCCURANCES = 1000;
+        private static final int MIN_TAG_OCCURANCES = 1000;
 
 		public void reduce(Text key, Iterator<IntWritable> values,
 				OutputCollector<IntWritable, Text> output, Reporter reporter)
@@ -63,7 +62,6 @@ public class BiggestClusterSizes extends Configured implements Tool {
 			}
 			if (sum > MIN_TAG_OCCURANCES)
 				output.collect(new IntWritable(sum), key);
-
 		}
 	}
 
